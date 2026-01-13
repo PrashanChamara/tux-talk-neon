@@ -55,6 +55,9 @@
             left: 0; 
             z-index: 1; 
             touch-action: none; 
+            /* Ensures crisp rendering on modern displays */
+            image-rendering: -webkit-optimize-contrast; 
+            image-rendering: crisp-edges;
         }
 
         /* --- UI LAYERS (Z-INDEX 10) --- */
@@ -294,7 +297,7 @@
 
 <script>
 /* ----------------------------------------------------------------
-   1. AUDIO SYSTEM (Enhanced SFX)
+   1. AUDIO SYSTEM
    ---------------------------------------------------------------- */
 const AudioSys = {
     ctx: null,
@@ -329,7 +332,6 @@ const AudioSys = {
         if (!this.ctx) return;
         const baseFreqs = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
         const freq = baseFreqs[(chainLen - 3) % baseFreqs.length];
-        
         const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
         osc.connect(gain); gain.connect(this.ctx.destination);
         osc.type = 'triangle'; osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
@@ -350,15 +352,14 @@ const AudioSys = {
         });
     },
 
-    // NEW: Level Up Sound
     playLevelUp: function() {
         if (!this.ctx) return;
         const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
         osc.connect(gain); gain.connect(this.ctx.destination);
         osc.type = 'sine';
         osc.frequency.setValueAtTime(261.63, this.ctx.currentTime);
-        osc.frequency.linearRampToValueAtTime(523.25, this.ctx.currentTime + 0.5); // C4 to C5
-        osc.frequency.linearRampToValueAtTime(1046.50, this.ctx.currentTime + 1.0); // C6
+        osc.frequency.linearRampToValueAtTime(523.25, this.ctx.currentTime + 0.5);
+        osc.frequency.linearRampToValueAtTime(1046.50, this.ctx.currentTime + 1.0);
         gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
         gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 1.5);
         osc.start(); osc.stop(this.ctx.currentTime + 1.6);
@@ -398,11 +399,14 @@ const Data = {
 const LevelManager = {
     getLevel: function(lvl) {
         let shape = 'square';
-        let palette = ['#FF0055', '#00F260', '#00D4FF', '#FFD700', '#BF00FF'];
-        if(lvl > 20 && lvl <= 40) { shape = 'circle'; palette = ['#FF9AA2', '#FFB7B2', '#FFDAC1', '#E2F0CB', '#B5EAD7']; }
-        if(lvl > 40 && lvl <= 60) { shape = 'diamond'; palette = ['#333333', '#555555', '#777777', '#999999', '#BBBBBB']; }
-        if(lvl > 60 && lvl <= 80) { shape = 'hex'; palette = ['#00FFFF', '#FF00FF', '#FFFF00', '#00FF00', '#FF0000']; }
-        if(lvl > 80) { shape = 'star'; palette = ['#E0BBE4', '#957DAD', '#D291BC', '#FEC8D8', '#FFDFD3']; }
+        // CLEAN & BRIGHT PALETTES
+        let palette = ['#FF3333', '#33FF57', '#3357FF', '#F1C40F', '#8E44AD']; 
+        
+        if(lvl > 20 && lvl <= 40) { shape = 'circle'; palette = ['#E74C3C', '#2ECC71', '#3498DB', '#F1C40F', '#9B59B6']; }
+        if(lvl > 40 && lvl <= 60) { shape = 'diamond'; palette = ['#E67E22', '#1ABC9C', '#2980B9', '#D35400', '#7F8C8D']; }
+        if(lvl > 60 && lvl <= 80) { shape = 'hex'; palette = ['#F39C12', '#16A085', '#2C3E50', '#C0392B', '#27AE60']; }
+        if(lvl > 80) { shape = 'star'; palette = ['#FF00FF', '#00FFFF', '#FFFF00', '#FF0055', '#00FF00']; }
+        
         return { target: 500 + (lvl * 250), moves: Math.max(10, 30 - Math.floor(lvl / 5)), shape, colors: palette };
     }
 };
@@ -420,6 +424,9 @@ const Game = {
     init: function() {
         this.resize(); 
         window.addEventListener('resize', () => this.resize());
+        
+        // FIX: CRISP RENDERING
+        this.ctx.imageSmoothingEnabled = false;
         
         const getPos = (e) => {
             let cx, cy;
@@ -453,6 +460,8 @@ const Game = {
         this.blockSize = Math.floor((this.width - margin * 2) / 6);
         this.offsetX = margin;
         this.offsetY = (this.height * 0.2);
+        // Re-apply crisp setting on resize
+        this.ctx.imageSmoothingEnabled = false;
     },
 
     startLevel: function(lvl) {
@@ -467,7 +476,7 @@ const Game = {
                     r, c, x: this.offsetX + c * this.blockSize, y: this.offsetY + r * this.blockSize,
                     color: this.levelData.colors[Math.floor(Math.random() * this.levelData.colors.length)],
                     active: true, scale: 0, highlight: 0,
-                    breatheOffset: Math.random() * 100 // Random start for breathing
+                    breatheOffset: Math.random() * 100 
                 });
             }
         }
@@ -561,40 +570,30 @@ const Game = {
         else if (this.moves <= 0) { this.loseLevel(); }
     },
 
-    // NEW: Level Transition Logic
     transitionToNextLevel: function() {
         this.state = 'TRANSITION';
         const nextLvl = Data.currentLevel + 1;
-        
-        // Play Sound
         AudioSys.playLevelUp();
-        
-        // Reward
         const reward = Math.floor(this.target / 10) + (Data.currentLevel * 10);
         Data.coins += reward;
         if(Data.currentLevel >= Data.unlockedLevel && Data.currentLevel < 100) { Data.unlockedLevel = Data.currentLevel + 1; }
         Data.save();
 
-        // Show Animation
         const transitionScreen = document.getElementById('screen-transition');
         const transitionText = document.getElementById('transition-text');
         transitionText.innerText = "LEVEL " + nextLvl;
         
-        // Hide HUD
         document.getElementById('screen-hud').classList.remove('active');
         
-        // Show Overlay
         transitionScreen.classList.remove('hidden');
         transitionScreen.classList.add('active');
 
-        // Wait then start next level
         setTimeout(() => {
             transitionScreen.classList.remove('active');
             transitionScreen.classList.add('hidden');
             if(nextLvl <= 100) {
                 this.startLevel(nextLvl);
             } else {
-                // Game Completed
                 alert("YOU WIN! ALL 100 LEVELS COMPLETE!");
                 this.quitToMenu();
             }
@@ -632,17 +631,26 @@ const Game = {
         requestAnimationFrame(() => this.loop());
         const ctx = this.ctx; const w = this.width; const h = this.height; ctx.clearRect(0,0,w,h);
         
-        // Global Breathing Time
+        // Force crisp rendering every frame (safeguard)
+        ctx.imageSmoothingEnabled = false;
+
         const time = Date.now() / 500;
 
         if(this.chain.length > 0) {
             ctx.beginPath(); ctx.strokeStyle = 'white'; ctx.lineWidth = 8; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            // Add glow ONLY to the line, not blocks
+            ctx.shadowColor = 'rgba(255,255,255,0.5)';
+            ctx.shadowBlur = 10;
+
             const start = this.chain[0]; ctx.moveTo(start.x + this.blockSize/2, start.y + this.blockSize/2);
             for(let i=1; i<this.chain.length; i++) {
                 const b = this.chain[i]; const prev = this.chain[i-1]; const mx = (prev.x + b.x)/2 + this.blockSize/2; const my = (prev.y + b.y)/2 + this.blockSize/2;
                 ctx.quadraticCurveTo(prev.x + this.blockSize/2, prev.y + this.blockSize/2, mx, my);
             }
             const last = this.chain[this.chain.length-1]; ctx.lineTo(last.x + this.blockSize/2, last.y + this.blockSize/2); ctx.stroke();
+            
+            // Reset shadow for blocks
+            ctx.shadowBlur = 0;
         }
         
         this.grid.forEach(b => {
@@ -654,50 +662,40 @@ const Game = {
             const cx = b.x + this.blockSize/2;
             const cy = b.y + this.blockSize/2;
             
-            // BREATHING EFFECT: Add sine wave based on time
-            let breathing = Math.sin(time + b.breatheOffset) * 1.5;
-            
-            // If moves are low, make them panic (breathe faster/harder)
-            if(this.moves <= 3) {
-                breathing *= 2.0;
-            }
+            let breathing = Math.sin(time + b.breatheOffset) * 1.0; // Reduced amplitude for crispness
+            if(this.moves <= 3) { breathing *= 2.0; }
 
-            const size = (this.blockSize - 6) * b.scale / 2 + breathing;
+            // Round coordinates to integer pixels to prevent sub-pixel blur
+            const size = Math.round((this.blockSize - 6) * b.scale / 2 + breathing);
+            const rcx = Math.round(cx);
+            const rcy = Math.round(cy);
 
-            // FIX: Remove Shadow Blur, use Stroke for crispness
             ctx.fillStyle = b.color; 
-            ctx.strokeStyle = 'rgba(255,255,255,0.3)'; // White Border
-            ctx.lineWidth = 2;
             
-            // Highlight border when selected
+            // Outer White Border (Crisp)
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 3;
+            ctx.lineJoin = 'miter'; // Sharp corners
+
+            // Highlight border
             if(b.highlight > 0) {
-                ctx.strokeStyle = '#fff';
-                ctx.lineWidth = 4;
-                ctx.shadowColor = b.color; 
-                ctx.shadowBlur = 15;
-            } else {
-                ctx.shadowBlur = 0;
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 5;
             }
 
             ctx.beginPath(); const s = this.levelData ? this.levelData.shape : 'square';
             
-            if(s === 'square') { ctx.roundRect(cx - size, cy - size, size*2, size*2, 8); } 
-            else if(s === 'circle') { ctx.arc(cx, cy, size, 0, Math.PI*2); } 
-            else if(s === 'diamond') { ctx.moveTo(cx, cy - size); ctx.lineTo(cx + size, cy); ctx.lineTo(cx, cy + size); ctx.lineTo(cx - size, cy); ctx.closePath(); } 
-            else if(s === 'hex') { for(let i=0; i<6; i++) { const angle = (Math.PI/3) * i; const hx = cx + size * Math.cos(angle); const hy = cy + size * Math.sin(angle); if(i===0) ctx.moveTo(hx, hy); else ctx.lineTo(hx, hy); } ctx.closePath(); } 
-            else if(s === 'star') { for(let i=0; i<5; i++) { ctx.lineTo(Math.cos((18+i*72)/180*Math.PI)*size + cx, -Math.sin((18+i*72)/180*Math.PI)*size + cy); ctx.lineTo(Math.cos((54+i*72)/180*Math.PI)*size/2 + cx, -Math.sin((54+i*72)/180*Math.PI)*size/2 + cy); } ctx.closePath(); }
+            if(s === 'square') { ctx.roundRect(rcx - size, rcy - size, size*2, size*2, 8); } 
+            else if(s === 'circle') { ctx.arc(rcx, rcy, size, 0, Math.PI*2); } 
+            else if(s === 'diamond') { ctx.moveTo(rcx, rcy - size); ctx.lineTo(rcx + size, rcy); ctx.lineTo(rcx, rcy + size); ctx.lineTo(rcx - size, rcy); ctx.closePath(); } 
+            else if(s === 'hex') { for(let i=0; i<6; i++) { const angle = (Math.PI/3) * i; const hx = rcx + size * Math.cos(angle); const hy = rcy + size * Math.sin(angle); if(i===0) ctx.moveTo(hx, hy); else ctx.lineTo(hx, hy); } ctx.closePath(); } 
+            else if(s === 'star') { for(let i=0; i<5; i++) { ctx.lineTo(Math.cos((18+i*72)/180*Math.PI)*size + rcx, -Math.sin((18+i*72)/180*Math.PI)*size + rcy); ctx.lineTo(Math.cos((54+i*72)/180*Math.PI)*size/2 + rcx, -Math.sin((54+i*72)/180*Math.PI)*size/2 + rcy); } ctx.closePath(); }
             
             ctx.fill();
-            ctx.stroke(); // Draw the crisp border
-            
-            // Add a "Gem" shine (Inner reflection)
-            ctx.fillStyle = 'rgba(255,255,255,0.2)';
-            ctx.beginPath();
-            ctx.arc(cx - size*0.3, cy - size*0.3, size*0.2, 0, Math.PI*2);
-            ctx.fill();
+            ctx.stroke(); // Draw sharp border
         });
         
-        // Draw Particles
+        // Particles
         for(let i=this.particles.length-1; i>=0; i--) {
             let p = this.particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.05;
             if(p.life <= 0) { this.particles.splice(i,1); continue; }

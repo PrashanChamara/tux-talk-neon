@@ -1,4 +1,4 @@
-const CACHE_NAME = 'neon-zen-v3-jazz'; // UPDATED VERSION
+const CACHE_NAME = 'neon-zen-v4-clean'; 
 const ASSETS = [
   './',
   './index.html',
