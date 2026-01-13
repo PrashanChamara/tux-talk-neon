@@ -22,7 +22,7 @@
         body { 
             margin: 0; overflow: hidden; background-color: var(--dark); 
             font-family: 'Rajdhani', sans-serif; 
-            touch-action: none; /* Prevents mobile zooming */
+            touch-action: none; 
             user-select: none; 
             display: flex; justify-content: center; align-items: center; height: 100vh;
             color: white;
@@ -40,9 +40,9 @@
         /* Heartbeat Effect */
         .heartbeat-mode { animation: heartbeat-panic 0.8s infinite; }
         @keyframes heartbeat-panic {
-            0% { box-shadow: inset 0 0 0 var(--dark); }
-            50% { box-shadow: inset 0 0 150px rgba(255, 42, 42, 0.6); border: 2px solid var(--danger); }
-            100% { box-shadow: inset 0 0 0 var(--dark); }
+            0% { box-shadow: inset 0 0 0 var(--dark); border: 1px solid transparent; }
+            50% { box-shadow: inset 0 0 100px rgba(255, 42, 42, 0.4); border: 2px solid var(--danger); }
+            100% { box-shadow: inset 0 0 0 var(--dark); border: 1px solid transparent; }
         }
 
         /* --- CANVAS (Z-INDEX 1) --- */
@@ -53,7 +53,7 @@
             position: absolute; 
             top: 0; 
             left: 0; 
-            z-index: 1; /* BELOW UI, but clickable */
+            z-index: 1; 
             touch-action: none; 
         }
 
@@ -61,28 +61,47 @@
         #ui-container {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 10;
-            pointer-events: none; /* LET CLICKS PASS THROUGH TO CANVAS */
+            pointer-events: none; 
         }
 
         .layer { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             display: flex; flex-direction: column; 
             align-items: center; justify-content: center; 
-            transition: opacity 0.3s;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+            transition: opacity 0.5s;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
             opacity: 0;
-            visibility: hidden; /* HIDES FROM CLICK DETECTION */
+            visibility: hidden; 
             pointer-events: none;
         }
 
         .layer.active { 
             opacity: 1; 
             visibility: visible; 
-            pointer-events: auto; /* CATCH CLICKS WHEN VISIBLE */
+            pointer-events: auto; 
             background: transparent; 
         }
         
-        .layer.static-bg { background: var(--dark); z-index: 500; } /* For Loading/Init */
+        .layer.static-bg { background: var(--dark); z-index: 500; } 
+
+        /* --- LEVEL TRANSITION OVERLAY --- */
+        #screen-transition {
+            z-index: 600;
+            background: var(--dark);
+        }
+        #transition-text {
+            font-family: 'Orbitron';
+            font-size: 3rem;
+            color: var(--primary);
+            text-shadow: 0 0 30px var(--primary);
+            animation: zoomIn 1.5s ease-out forwards;
+            text-align: center;
+        }
+        @keyframes zoomIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 0; }
+        }
 
         /* --- LOADING --- */
         .logo-img { 
@@ -103,7 +122,6 @@
             padding: 30px; border-radius: 20px;
             width: 85%; text-align: center;
             box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            /* This panel needs to catch clicks even if parent is 'none' */
             pointer-events: auto; 
         }
 
@@ -113,9 +131,9 @@
             display: block; width: 100%; margin: 12px 0; padding: 16px;
             border-radius: 12px; border: none;
             background: var(--glass); color: white; font-family: 'Rajdhani'; font-weight: 700;
-            font-size: 1.1rem; cursor: pointer; transition: 0.2s;
+            font-size: 1.1rem; cursor: pointer; transition: 0.1s;
             border: 1px solid rgba(255,255,255,0.1);
-            pointer-events: auto; /* BUTTONS MUST ALWAYS BE CLICKABLE */
+            pointer-events: auto; 
         }
         .menu-btn:active { transform: scale(0.96); background: rgba(255,255,255,0.2); }
         .menu-btn.primary { background: var(--primary); color: #000; border: none; box-shadow: 0 0 20px rgba(0, 242, 96, 0.3); }
@@ -124,7 +142,7 @@
         #screen-hud { 
             justify-content: space-between; 
             background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 40%); 
-            pointer-events: none; /* HUD background passes clicks */
+            pointer-events: none; 
         }
         
         .hud-top { width: 100%; padding: 15px 20px; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; }
@@ -144,7 +162,7 @@
             border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 1.2rem;
             display: flex; align-items: center; justify-content: center;
             backdrop-filter: blur(5px); transition: 0.2s; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            pointer-events: auto; /* BUTTONS CLICKABLE */
+            pointer-events: auto; 
         }
         .ctrl-btn:active { transform: scale(0.9); background: var(--primary); color: black; border-color: var(--primary); }
         .ctrl-btn.danger { border-color: var(--danger); color: var(--danger); }
@@ -166,10 +184,10 @@
 
 <div id="app-container">
     
-    <!-- CANVAS LAYER (Bottom) -->
+    <!-- CANVAS LAYER -->
     <canvas id="game-canvas"></canvas>
 
-    <!-- UI LAYER (Top) -->
+    <!-- UI LAYER -->
     <div id="ui-container">
 
         <!-- INIT SCREEN -->
@@ -229,6 +247,11 @@
             </div>
         </div>
 
+        <!-- LEVEL TRANSITION ANIMATION -->
+        <div id="screen-transition" class="layer static-bg hidden">
+            <div id="transition-text">LEVEL 2</div>
+        </div>
+
         <!-- GAME HUD -->
         <div id="screen-hud" class="layer active">
             <div class="hud-top">
@@ -266,12 +289,12 @@
             </div>
         </div>
 
-    </div> <!-- End UI Container -->
-</div> <!-- End App Container -->
+    </div> 
+</div> 
 
 <script>
 /* ----------------------------------------------------------------
-   1. AUDIO SYSTEM
+   1. AUDIO SYSTEM (Enhanced SFX)
    ---------------------------------------------------------------- */
 const AudioSys = {
     ctx: null,
@@ -279,6 +302,7 @@ const AudioSys = {
         if (!this.ctx) { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
         if (this.ctx.state === 'suspended') this.ctx.resume();
     },
+    
     playBoot: function() {
         if (!this.ctx) return;
         const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
@@ -288,6 +312,7 @@ const AudioSys = {
         gain.gain.setValueAtTime(0.1, this.ctx.currentTime); gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 1.2);
         osc.start(); osc.stop(this.ctx.currentTime + 1.5);
     },
+
     playLoading: function() {
         if (!this.ctx) return;
         [261, 329, 392, 523, 659, 783].forEach((freq, i) => {
@@ -299,10 +324,12 @@ const AudioSys = {
             osc.start(this.ctx.currentTime + i*0.1); osc.stop(this.ctx.currentTime + i*0.1 + 0.4);
         });
     },
+
     playMatch: function(chainLen) {
         if (!this.ctx) return;
         const baseFreqs = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
         const freq = baseFreqs[(chainLen - 3) % baseFreqs.length];
+        
         const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
         osc.connect(gain); gain.connect(this.ctx.destination);
         osc.type = 'triangle'; osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
@@ -310,6 +337,7 @@ const AudioSys = {
         gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.3);
         osc.start(); osc.stop(this.ctx.currentTime + 0.4);
     },
+
     playWin: function() {
         if (!this.ctx) return;
         [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
@@ -321,6 +349,21 @@ const AudioSys = {
             osc.start(this.ctx.currentTime + i*0.1); osc.stop(this.ctx.currentTime + i*0.1 + 0.6);
         });
     },
+
+    // NEW: Level Up Sound
+    playLevelUp: function() {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(261.63, this.ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(523.25, this.ctx.currentTime + 0.5); // C4 to C5
+        osc.frequency.linearRampToValueAtTime(1046.50, this.ctx.currentTime + 1.0); // C6
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 1.5);
+        osc.start(); osc.stop(this.ctx.currentTime + 1.6);
+    },
+
     playLose: function() {
         if (!this.ctx) return;
         const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
@@ -330,6 +373,7 @@ const AudioSys = {
         gain.gain.setValueAtTime(0.2, this.ctx.currentTime); gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 1);
         osc.start(); osc.stop(this.ctx.currentTime + 1.2);
     },
+
     playPower: function() {
         if (!this.ctx) return;
         const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
@@ -384,12 +428,7 @@ const Game = {
             return {x: cx, y: cy};
         };
 
-        const start = (e) => {
-            // Prevent default ONLY if we are touching the canvas
-            if(e.target === this.canvas) e.preventDefault(); 
-            const p = getPos(e);
-            this.inputStart(p.x, p.y);
-        };
+        const start = (e) => { if(e.target === this.canvas) e.preventDefault(); const p = getPos(e); this.inputStart(p.x, p.y); };
         const move = (e) => { if(e.target === this.canvas) e.preventDefault(); const p = getPos(e); this.inputMove(p.x, p.y); };
         const end = (e) => { this.inputEnd(); };
 
@@ -427,7 +466,8 @@ const Game = {
                 this.grid.push({
                     r, c, x: this.offsetX + c * this.blockSize, y: this.offsetY + r * this.blockSize,
                     color: this.levelData.colors[Math.floor(Math.random() * this.levelData.colors.length)],
-                    active: true, scale: 0, highlight: 0
+                    active: true, scale: 0, highlight: 0,
+                    breatheOffset: Math.random() * 100 // Random start for breathing
                 });
             }
         }
@@ -439,8 +479,7 @@ const Game = {
     inputStart: function(clientX, clientY) {
         if(this.state !== 'PLAY') return;
         const rect = this.canvas.getBoundingClientRect();
-        if (rect.width === 0) return; // Safety check
-        
+        if (rect.width === 0) return;
         const scaleX = this.canvas.width / rect.width;
         const scaleY = this.canvas.height / rect.height;
         const x = (clientX - rect.left) * scaleX;
@@ -454,7 +493,6 @@ const Game = {
         if(!this.isDragging) return;
         const rect = this.canvas.getBoundingClientRect();
         if (rect.width === 0) return;
-
         const scaleX = this.canvas.width / rect.width;
         const scaleY = this.canvas.height / rect.height;
         const x = (clientX - rect.left) * scaleX;
@@ -462,7 +500,6 @@ const Game = {
 
         const b = this.getBlockAt(x, y);
         const last = this.chain[this.chain.length-1];
-        
         if(b && b !== last && b.active) {
             const dist = Math.abs(b.r - last.r) + Math.abs(b.c - last.c);
             if(dist === 1 && b.color === last.color && !this.chain.includes(b)) { this.chain.push(b); this.triggerFeedback(b); }
@@ -511,7 +548,7 @@ const Game = {
             }
             for(let i=0; i < (totalRows - activeBlocks.length); i++) {
                 const r = (totalRows - activeBlocks.length) - 1 - i;
-                this.grid.push({ r, c, x: this.offsetX + c * this.blockSize, y: - (i * 60) - 100, color: this.levelData.colors[Math.floor(Math.random() * this.levelData.colors.length)], active: true, scale: 0, highlight: 0 });
+                this.grid.push({ r, c, x: this.offsetX + c * this.blockSize, y: - (i * 60) - 100, color: this.levelData.colors[Math.floor(Math.random() * this.levelData.colors.length)], active: true, scale: 0, highlight: 0, breatheOffset: Math.random()*100 });
             }
         }
         this.checkState();
@@ -520,20 +557,48 @@ const Game = {
     checkState: function() {
         const container = document.getElementById('app-container');
         if(this.moves <= 3) container.classList.add('heartbeat-mode'); else container.classList.remove('heartbeat-mode');
-        if(this.score >= this.target) { this.winLevel(); } else if (this.moves <= 0) { this.loseLevel(); }
+        if(this.score >= this.target) { this.transitionToNextLevel(); } 
+        else if (this.moves <= 0) { this.loseLevel(); }
     },
 
-    winLevel: function() {
-        this.state = 'END'; AudioSys.playWin();
+    // NEW: Level Transition Logic
+    transitionToNextLevel: function() {
+        this.state = 'TRANSITION';
+        const nextLvl = Data.currentLevel + 1;
+        
+        // Play Sound
+        AudioSys.playLevelUp();
+        
+        // Reward
         const reward = Math.floor(this.target / 10) + (Data.currentLevel * 10);
         Data.coins += reward;
         if(Data.currentLevel >= Data.unlockedLevel && Data.currentLevel < 100) { Data.unlockedLevel = Data.currentLevel + 1; }
         Data.save();
-        document.getElementById('msg-title').innerText = "LEVEL COMPLETE!"; document.getElementById('msg-title').style.color = "var(--primary)";
-        document.getElementById('msg-desc').innerText = `Score: ${this.score}\nReward: ${reward} Coins`;
-        document.getElementById('msg-btn-1').innerText = "NEXT LEVEL";
-        document.getElementById('msg-btn-1').onclick = () => { if(Data.currentLevel < 100) this.startLevel(Data.currentLevel + 1); else UI.showMenu(); };
-        UI.showScreen('screen-msg');
+
+        // Show Animation
+        const transitionScreen = document.getElementById('screen-transition');
+        const transitionText = document.getElementById('transition-text');
+        transitionText.innerText = "LEVEL " + nextLvl;
+        
+        // Hide HUD
+        document.getElementById('screen-hud').classList.remove('active');
+        
+        // Show Overlay
+        transitionScreen.classList.remove('hidden');
+        transitionScreen.classList.add('active');
+
+        // Wait then start next level
+        setTimeout(() => {
+            transitionScreen.classList.remove('active');
+            transitionScreen.classList.add('hidden');
+            if(nextLvl <= 100) {
+                this.startLevel(nextLvl);
+            } else {
+                // Game Completed
+                alert("YOU WIN! ALL 100 LEVELS COMPLETE!");
+                this.quitToMenu();
+            }
+        }, 2000);
     },
 
     loseLevel: function() {
@@ -566,6 +631,10 @@ const Game = {
     loop: function() {
         requestAnimationFrame(() => this.loop());
         const ctx = this.ctx; const w = this.width; const h = this.height; ctx.clearRect(0,0,w,h);
+        
+        // Global Breathing Time
+        const time = Date.now() / 500;
+
         if(this.chain.length > 0) {
             ctx.beginPath(); ctx.strokeStyle = 'white'; ctx.lineWidth = 8; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
             const start = this.chain[0]; ctx.moveTo(start.x + this.blockSize/2, start.y + this.blockSize/2);
@@ -575,21 +644,60 @@ const Game = {
             }
             const last = this.chain[this.chain.length-1]; ctx.lineTo(last.x + this.blockSize/2, last.y + this.blockSize/2); ctx.stroke();
         }
+        
         this.grid.forEach(b => {
             b.y += (this.offsetY + b.r * this.blockSize - b.y) * 0.2;
             if(b.scale < 1) b.scale += (1 - b.scale) * 0.2;
             if(!b.active) b.scale *= 0.8;
             if(b.scale < 0.01) return;
-            const cx = b.x + this.blockSize/2; const cy = b.y + this.blockSize/2; const size = (this.blockSize - 6) * b.scale / 2;
-            ctx.fillStyle = b.color; if(b.highlight > 0) ctx.shadowColor = b.color, ctx.shadowBlur = 20; else ctx.shadowBlur = 0;
+
+            const cx = b.x + this.blockSize/2;
+            const cy = b.y + this.blockSize/2;
+            
+            // BREATHING EFFECT: Add sine wave based on time
+            let breathing = Math.sin(time + b.breatheOffset) * 1.5;
+            
+            // If moves are low, make them panic (breathe faster/harder)
+            if(this.moves <= 3) {
+                breathing *= 2.0;
+            }
+
+            const size = (this.blockSize - 6) * b.scale / 2 + breathing;
+
+            // FIX: Remove Shadow Blur, use Stroke for crispness
+            ctx.fillStyle = b.color; 
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)'; // White Border
+            ctx.lineWidth = 2;
+            
+            // Highlight border when selected
+            if(b.highlight > 0) {
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 4;
+                ctx.shadowColor = b.color; 
+                ctx.shadowBlur = 15;
+            } else {
+                ctx.shadowBlur = 0;
+            }
+
             ctx.beginPath(); const s = this.levelData ? this.levelData.shape : 'square';
+            
             if(s === 'square') { ctx.roundRect(cx - size, cy - size, size*2, size*2, 8); } 
             else if(s === 'circle') { ctx.arc(cx, cy, size, 0, Math.PI*2); } 
             else if(s === 'diamond') { ctx.moveTo(cx, cy - size); ctx.lineTo(cx + size, cy); ctx.lineTo(cx, cy + size); ctx.lineTo(cx - size, cy); ctx.closePath(); } 
             else if(s === 'hex') { for(let i=0; i<6; i++) { const angle = (Math.PI/3) * i; const hx = cx + size * Math.cos(angle); const hy = cy + size * Math.sin(angle); if(i===0) ctx.moveTo(hx, hy); else ctx.lineTo(hx, hy); } ctx.closePath(); } 
             else if(s === 'star') { for(let i=0; i<5; i++) { ctx.lineTo(Math.cos((18+i*72)/180*Math.PI)*size + cx, -Math.sin((18+i*72)/180*Math.PI)*size + cy); ctx.lineTo(Math.cos((54+i*72)/180*Math.PI)*size/2 + cx, -Math.sin((54+i*72)/180*Math.PI)*size/2 + cy); } ctx.closePath(); }
+            
+            ctx.fill();
+            ctx.stroke(); // Draw the crisp border
+            
+            // Add a "Gem" shine (Inner reflection)
+            ctx.fillStyle = 'rgba(255,255,255,0.2)';
+            ctx.beginPath();
+            ctx.arc(cx - size*0.3, cy - size*0.3, size*0.2, 0, Math.PI*2);
             ctx.fill();
         });
+        
+        // Draw Particles
         for(let i=this.particles.length-1; i>=0; i--) {
             let p = this.particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.05;
             if(p.life <= 0) { this.particles.splice(i,1); continue; }
@@ -605,12 +713,8 @@ const UI = {
     showScreen: function(id) {
         document.querySelectorAll('.layer').forEach(l => { l.classList.remove('active'); });
         const el = document.getElementById(id);
-        if(id === 'screen-hud') {
-            // Special handling for HUD: keep active but transparent click-through
-            el.classList.add('active'); 
-        } else {
-            el.classList.add('active');
-        }
+        if(id === 'screen-hud') { el.classList.add('active'); } 
+        else { el.classList.add('active'); }
         if(id === 'screen-menu') this.updateMenu();
     },
     showMenu: function() { this.showScreen('screen-menu'); },
