@@ -1,21 +1,36 @@
-const CACHE_NAME = 'neon-zen-flow-v1';
+const CACHE_NAME = 'neon-zen-v2-fix'; // VERSION CHANGED TO FORCE CACHE CLEAR
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './css/style.css',
-  './js/main.js',
-  './js/game-engine.js',
-  './js/audio.js',
-  './js/ui.js',
-  './assets/images/logo.jpeg',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css'
+  './service-worker.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
+  // NOTE: If you have images, add them here like: './assets/images/logo.jpeg'
 ];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
 });
 
+self.addEventListener('activate', (e) => {
+  // Remove old caches
+  e.waitUntil(
+    caches.keys().then((keyList) => {
+      return Promise.all(
+        keyList.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+        })
+      );
+    })
+  );
+});
+
 self.addEventListener('fetch', (e) => {
-  e.respondWith(caches.match(e.request).then((response) => response || fetch(e.request)));
+  e.respondWith(
+    caches.match(e.request).then((response) => {
+      return response || fetch(e.request);
+    })
+  );
 });

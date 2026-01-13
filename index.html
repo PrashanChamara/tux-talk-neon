@@ -22,8 +22,7 @@
         body { 
             margin: 0; overflow: hidden; background-color: var(--dark); 
             font-family: 'Rajdhani', sans-serif; 
-            /* CRITICAL: Prevents mobile browser zooming/scrolling gestures */
-            touch-action: none; 
+            touch-action: none; /* Prevents mobile zooming */
             user-select: none; 
             display: flex; justify-content: center; align-items: center; height: 100vh;
             color: white;
@@ -31,21 +30,22 @@
 
         #app-container {
             width: 100%; max-width: 500px; height: 100%; max-height: 950px;
-            position: relative; background: radial-gradient(circle at center, #0a0a1f 0%, #000 100%);
-            overflow: hidden; box-shadow: 0 0 100px rgba(0, 242, 96, 0.1);
+            position: relative; 
+            background: radial-gradient(circle at center, #0a0a1f 0%, #000 100%);
+            overflow: hidden; 
+            box-shadow: 0 0 100px rgba(0, 242, 96, 0.1);
             transition: box-shadow 0.2s;
         }
 
-        /* Heartbeat Effect Class */
-        .heartbeat-mode {
-            animation: heartbeat-panic 0.8s infinite;
-        }
+        /* Heartbeat Effect */
+        .heartbeat-mode { animation: heartbeat-panic 0.8s infinite; }
         @keyframes heartbeat-panic {
             0% { box-shadow: inset 0 0 0 var(--dark); }
             50% { box-shadow: inset 0 0 150px rgba(255, 42, 42, 0.6); border: 2px solid var(--danger); }
             100% { box-shadow: inset 0 0 0 var(--dark); }
         }
 
+        /* --- CANVAS (Z-INDEX 1) --- */
         canvas { 
             display: block; 
             width: 100%; 
@@ -53,23 +53,36 @@
             position: absolute; 
             top: 0; 
             left: 0; 
-            z-index: 1; 
-            touch-action: none; /* Force canvas to handle touches */
+            z-index: 1; /* BELOW UI, but clickable */
+            touch-action: none; 
         }
 
-        /* --- UI LAYERS --- */
+        /* --- UI LAYERS (Z-INDEX 10) --- */
+        #ui-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10;
+            pointer-events: none; /* LET CLICKS PASS THROUGH TO CANVAS */
+        }
+
         .layer { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            pointer-events: none; display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; z-index: 10; 
-            transition: opacity 0.4s ease;
+            display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; 
+            transition: opacity 0.3s;
             background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+            opacity: 0;
+            visibility: hidden; /* HIDES FROM CLICK DETECTION */
+            pointer-events: none;
         }
-        .layer.hidden { opacity: 0; pointer-events: none; }
-        .layer.active { opacity: 1; pointer-events: auto; background: transparent; }
+
+        .layer.active { 
+            opacity: 1; 
+            visibility: visible; 
+            pointer-events: auto; /* CATCH CLICKS WHEN VISIBLE */
+            background: transparent; 
+        }
         
-        /* Specific loading screen needs background */
-        #screen-loading { background: var(--dark); z-index: 500; pointer-events: auto; }
+        .layer.static-bg { background: var(--dark); z-index: 500; } /* For Loading/Init */
 
         /* --- LOADING --- */
         .logo-img { 
@@ -78,21 +91,22 @@
             margin-bottom: 20px; border: 2px solid white;
         }
         .company-name { font-family: 'Orbitron'; color: var(--primary); font-size: 1.2rem; letter-spacing: 3px; margin-bottom: 30px; }
-        
         .loading-container { width: 80%; max-width: 300px; text-align: center; }
         .loading-bar-bg { width: 100%; height: 6px; background: #222; border-radius: 3px; overflow: hidden; margin-top: 10px; }
-        .loading-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary), var(--secondary)); transition: width 0.1s; box-shadow: 0 0 10px var(--primary); }
+        .loading-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary), var(--secondary)); transition: width 0.1s; }
         .loading-text { font-size: 0.8rem; color: #666; margin-top: 5px; }
 
         /* --- MENUS --- */
         .panel {
-            background: rgba(10, 10, 25, 0.9);
+            background: rgba(10, 10, 25, 0.95);
             border: 1px solid var(--glass);
             padding: 30px; border-radius: 20px;
             width: 85%; text-align: center;
             box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            pointer-events: auto;
+            /* This panel needs to catch clicks even if parent is 'none' */
+            pointer-events: auto; 
         }
+
         h1 { font-family: 'Orbitron'; font-size: 2.5rem; margin: 0; background: linear-gradient(to right, #fff, var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
         .menu-btn {
@@ -101,34 +115,36 @@
             background: var(--glass); color: white; font-family: 'Rajdhani'; font-weight: 700;
             font-size: 1.1rem; cursor: pointer; transition: 0.2s;
             border: 1px solid rgba(255,255,255,0.1);
+            pointer-events: auto; /* BUTTONS MUST ALWAYS BE CLICKABLE */
         }
         .menu-btn:active { transform: scale(0.96); background: rgba(255,255,255,0.2); }
         .menu-btn.primary { background: var(--primary); color: #000; border: none; box-shadow: 0 0 20px rgba(0, 242, 96, 0.3); }
 
         /* --- HUD --- */
-        #screen-hud { justify-content: space-between; pointer-events: none; background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 40%); }
+        #screen-hud { 
+            justify-content: space-between; 
+            background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 40%); 
+            pointer-events: none; /* HUD background passes clicks */
+        }
         
         .hud-top { width: 100%; padding: 15px 20px; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; }
         .stat-group { text-align: center; }
         .stat-val { font-family: 'Orbitron'; font-size: 1.4rem; font-weight: bold; color: white; text-shadow: 0 0 5px rgba(255,255,255,0.3); }
         .stat-label { font-size: 0.7rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
         .target-val { color: var(--secondary); }
-        
         .progress-wrap { width: 120px; height: 6px; background: #222; border-radius: 3px; margin-top: 5px; overflow: hidden; }
         .progress-fill { height: 100%; background: var(--secondary); width: 0%; transition: width 0.3s; }
 
-        /* COMBO */
         #combo-display { position: absolute; top: 120px; width: 100%; text-align: center; opacity: 0; transition: 0.2s; pointer-events: none; }
         #combo-text { font-family: 'Orbitron'; font-size: 4rem; color: var(--primary); text-shadow: 0 0 20px var(--primary); font-style: italic; }
 
-        /* BOTTOM CONTROLS */
-        .hud-bottom { width: 100%; padding-bottom: 30px; pointer-events: auto; display: flex; justify-content: center; gap: 15px; }
+        .hud-bottom { width: 100%; padding-bottom: 30px; display: flex; justify-content: center; gap: 15px; pointer-events: none; }
         .ctrl-btn {
             width: 60px; height: 60px; border-radius: 50%; background: rgba(0,0,0,0.6);
             border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 1.2rem;
             display: flex; align-items: center; justify-content: center;
             backdrop-filter: blur(5px); transition: 0.2s; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            cursor: pointer;
+            pointer-events: auto; /* BUTTONS CLICKABLE */
         }
         .ctrl-btn:active { transform: scale(0.9); background: var(--primary); color: black; border-color: var(--primary); }
         .ctrl-btn.danger { border-color: var(--danger); color: var(--danger); }
@@ -140,7 +156,7 @@
 
         /* --- LEVEL SELECT --- */
         .level-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; max-height: 300px; overflow-y: auto; width: 100%; padding: 10px; }
-        .lvl-btn { background: #222; border: 1px solid #444; color: #666; padding: 10px; border-radius: 5px; cursor: pointer; font-family: 'Orbitron'; }
+        .lvl-btn { background: #222; border: 1px solid #444; color: #666; padding: 10px; border-radius: 5px; cursor: pointer; font-family: 'Orbitron'; pointer-events: auto;}
         .lvl-btn.unlocked { color: white; background: #333; border-color: var(--primary); }
         .lvl-btn.current { background: var(--primary); color: black; box-shadow: 0 0 10px var(--primary); }
 
@@ -150,252 +166,200 @@
 
 <div id="app-container">
     
+    <!-- CANVAS LAYER (Bottom) -->
     <canvas id="game-canvas"></canvas>
 
-    <!-- INIT SCREEN (Tap to Start) -->
-    <div id="screen-init" class="layer active">
-        <!-- Fallback placeholder if image missing, set src to your real path -->
-        <img src="assets/images/logo.jpeg" onerror="this.src='https://picsum.photos/seed/tuxtalk/150/150.jpg'" class="logo-img" alt="Logo">
-        <div class="company-name">TUX-TALK GAMING</div>
-        <button class="menu-btn primary" onclick="App.init()">TAP TO START</button>
-    </div>
+    <!-- UI LAYER (Top) -->
+    <div id="ui-container">
 
-    <!-- LOADING SCREEN -->
-    <div id="screen-loading" class="layer hidden">
-        <img src="assets/images/logo.jpeg" onerror="this.src='https://picsum.photos/seed/tuxtalk/150/150.jpg'" class="logo-img" alt="Logo">
-        <div class="company-name">TUX-TALK GAMING</div>
-        <div style="font-size:1.2rem; font-family:'Orbitron'; color:white;">INITIALIZING...</div>
-        <div class="loading-container">
-            <div class="loading-bar-bg"><div class="loading-bar-fill" id="load-bar"></div></div>
-            <div class="loading-text" id="load-text">Loading Assets...</div>
+        <!-- INIT SCREEN -->
+        <div id="screen-init" class="layer active static-bg">
+            <img src="assets/images/logo.jpeg" onerror="this.src='https://picsum.photos/seed/tuxtalk/150/150.jpg'" class="logo-img" alt="Logo">
+            <div class="company-name">TUX-TALK GAMING</div>
+            <button class="menu-btn primary" onclick="App.init()">TAP TO START</button>
         </div>
-    </div>
 
-    <!-- MAIN MENU -->
-    <div id="screen-menu" class="layer hidden" style="background: rgba(0,0,0,0.9);">
-        <div class="panel">
-            <h1>NEON ZEN</h1>
-            <p style="color: #888; margin-top: -10px; letter-spacing: 2px;">FLOW LINK</p>
-            
-            <div style="margin: 20px 0; display: flex; gap: 20px; justify-content: center; width: 100%;">
-                <div style="text-align: center;">
-                    <div style="font-size: 0.8rem; color: #aaa;">LEVEL</div>
-                    <div style="font-size: 1.5rem; color: var(--primary); font-family: 'Orbitron';" id="menu-level">1</div>
+        <!-- LOADING SCREEN -->
+        <div id="screen-loading" class="layer static-bg">
+            <img src="assets/images/logo.jpeg" onerror="this.src='https://picsum.photos/seed/tuxtalk/150/150.jpg'" class="logo-img" alt="Logo">
+            <div class="company-name">TUX-TALK GAMING</div>
+            <div style="font-size:1.2rem; font-family:'Orbitron'; color:white;">INITIALIZING...</div>
+            <div class="loading-container">
+                <div class="loading-bar-bg"><div class="loading-bar-fill" id="load-bar"></div></div>
+                <div class="loading-text" id="load-text">Loading Assets...</div>
+            </div>
+        </div>
+
+        <!-- MAIN MENU -->
+        <div id="screen-menu" class="layer">
+            <div class="panel">
+                <h1>NEON ZEN</h1>
+                <p style="color: #888; margin-top: -10px; letter-spacing: 2px;">FLOW LINK</p>
+                <div style="margin: 20px 0; display: flex; gap: 20px; justify-content: center; width: 100%;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.8rem; color: #aaa;">LEVEL</div>
+                        <div style="font-size: 1.5rem; color: var(--primary); font-family: 'Orbitron';" id="menu-level">1</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.8rem; color: #aaa;">COINS</div>
+                        <div style="font-size: 1.5rem; color: gold; font-family: 'Orbitron';"><i class="fas fa-coins"></i> <span id="menu-coins">0</span></div>
+                    </div>
                 </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 0.8rem; color: #aaa;">COINS</div>
-                    <div style="font-size: 1.5rem; color: gold; font-family: 'Orbitron';"><i class="fas fa-coins"></i> <span id="menu-coins">0</span></div>
+                <button class="menu-btn primary" onclick="UI.showLevelSelect()"><i class="fas fa-play"></i> PLAY</button>
+                <button class="menu-btn" onclick="UI.showShop()"><i class="fas fa-shopping-bag"></i> ITEM SHOP</button>
+            </div>
+        </div>
+
+        <!-- LEVEL SELECT -->
+        <div id="screen-levels" class="layer">
+            <div class="panel">
+                <h2>SELECT LEVEL</h2>
+                <div class="level-grid" id="level-grid"></div>
+                <button class="menu-btn" onclick="UI.showScreen('screen-menu')">BACK</button>
+            </div>
+        </div>
+
+        <!-- SHOP -->
+        <div id="screen-shop" class="layer">
+            <div class="panel" style="height: 70%; display: flex; flex-direction: column;">
+                <h2>ITEM SHOP</h2>
+                <div style="color: gold; margin-bottom: 15px;"><i class="fas fa-coins"></i> <span id="shop-coins">0</span></div>
+                <div id="shop-list" style="flex: 1; overflow-y: auto;"></div>
+                <button class="menu-btn" onclick="UI.showScreen('screen-menu')">BACK</button>
+            </div>
+        </div>
+
+        <!-- GAME HUD -->
+        <div id="screen-hud" class="layer active">
+            <div class="hud-top">
+                <div class="stat-group">
+                    <div class="stat-label">Target</div>
+                    <div class="stat-val target-val" id="hud-target">1000</div>
+                    <div class="progress-wrap"><div class="progress-fill" id="hud-progress"></div></div>
+                </div>
+                <div class="stat-group">
+                    <div class="stat-label">Moves</div>
+                    <div class="stat-val" id="hud-moves">20</div>
                 </div>
             </div>
-
-            <button class="menu-btn primary" onclick="UI.showLevelSelect()">
-                <i class="fas fa-play"></i> PLAY
-            </button>
-            <button class="menu-btn" onclick="UI.showShop()">
-                <i class="fas fa-shopping-bag"></i> ITEM SHOP
-            </button>
-        </div>
-    </div>
-
-    <!-- LEVEL SELECT -->
-    <div id="screen-levels" class="layer hidden" style="background: rgba(0,0,0,0.95);">
-        <div class="panel">
-            <h2>SELECT LEVEL</h2>
-            <div class="level-grid" id="level-grid"></div>
-            <button class="menu-btn" onclick="UI.showScreen('screen-menu')">BACK</button>
-        </div>
-    </div>
-
-    <!-- SHOP -->
-    <div id="screen-shop" class="layer hidden" style="background: rgba(0,0,0,0.95);">
-        <div class="panel" style="height: 70%; display: flex; flex-direction: column;">
-            <h2>ITEM SHOP</h2>
-            <div style="color: gold; margin-bottom: 15px;"><i class="fas fa-coins"></i> <span id="shop-coins">0</span></div>
-            <div id="shop-list" style="flex: 1; overflow-y: auto;"></div>
-            <button class="menu-btn" onclick="UI.showScreen('screen-menu')">BACK</button>
-        </div>
-    </div>
-
-    <!-- GAME HUD -->
-    <div id="screen-hud" class="layer hidden">
-        <div class="hud-top">
-            <div class="stat-group">
-                <div class="stat-label">Target</div>
-                <div class="stat-val target-val" id="hud-target">1000</div>
-                <div class="progress-wrap"><div class="progress-fill" id="hud-progress"></div></div>
-            </div>
-            <div class="stat-group">
-                <div class="stat-label">Moves</div>
-                <div class="stat-val" id="hud-moves">20</div>
+            <div id="combo-display"><div id="combo-text">5x</div></div>
+            <div class="hud-bottom">
+                <div class="ctrl-btn" onclick="Game.activatePower('bomb')">
+                    <i class="fas fa-bomb"></i>
+                    <span style="position:absolute; bottom:-5px; right:-5px; background:#fff; color:#000; font-size:0.7rem; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center;" id="badge-bomb">0</span>
+                </div>
+                <div class="ctrl-btn" onclick="Game.activatePower('life')">
+                    <i class="fas fa-heart"></i>
+                    <span style="position:absolute; bottom:-5px; right:-5px; background:#fff; color:#000; font-size:0.7rem; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center;" id="badge-life">0</span>
+                </div>
+                <div class="ctrl-btn danger" onclick="Game.quitToMenu()"><i class="fas fa-home"></i></div>
             </div>
         </div>
 
-        <div id="combo-display">
-            <div id="combo-text">5x</div>
-        </div>
-
-        <div class="hud-bottom">
-            <div class="ctrl-btn" onclick="Game.activatePower('bomb')">
-                <i class="fas fa-bomb"></i>
-                <span style="position:absolute; bottom:-5px; right:-5px; background:#fff; color:#000; font-size:0.7rem; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center;" id="badge-bomb">0</span>
-            </div>
-            <div class="ctrl-btn" onclick="Game.activatePower('life')">
-                <i class="fas fa-heart"></i>
-                <span style="position:absolute; bottom:-5px; right:-5px; background:#fff; color:#000; font-size:0.7rem; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center;" id="badge-life">0</span>
-            </div>
-            <div class="ctrl-btn danger" onclick="Game.quitToMenu()">
-                <i class="fas fa-home"></i>
+        <!-- GAME OVER / PAUSE -->
+        <div id="screen-msg" class="layer">
+            <div class="panel">
+                <h2 id="msg-title">PAUSED</h2>
+                <p id="msg-desc" style="color:#ccc;">...</p>
+                <button class="menu-btn primary" id="msg-btn-1" onclick="Game.resume()">RESUME</button>
+                <button class="menu-btn" onclick="Game.quitToMenu()">MAIN MENU</button>
             </div>
         </div>
-    </div>
 
-    <!-- PAUSE / GAME OVER -->
-    <div id="screen-msg" class="layer hidden" style="background: rgba(0,0,0,0.9);">
-        <div class="panel">
-            <h2 id="msg-title">PAUSED</h2>
-            <p id="msg-desc" style="color:#ccc;">...</p>
-            <button class="menu-btn primary" id="msg-btn-1" onclick="Game.resume()">RESUME</button>
-            <button class="menu-btn" onclick="Game.quitToMenu()">MAIN MENU</button>
-        </div>
-    </div>
-
-</div>
+    </div> <!-- End UI Container -->
+</div> <!-- End App Container -->
 
 <script>
 /* ----------------------------------------------------------------
-   1. AUDIO SYSTEM (Enhanced)
+   1. AUDIO SYSTEM
    ---------------------------------------------------------------- */
 const AudioSys = {
     ctx: null,
-    
     init: function() {
-        if (!this.ctx) {
-            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-        }
+        if (!this.ctx) { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
         if (this.ctx.state === 'suspended') this.ctx.resume();
     },
-
-    // 1. Opening Sound (Bootup Sweep)
     playBoot: function() {
         if (!this.ctx) return;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
+        const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
         osc.connect(gain); gain.connect(this.ctx.destination);
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(50, this.ctx.currentTime);
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(50, this.ctx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 1);
-        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 1.2);
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime); gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 1.2);
         osc.start(); osc.stop(this.ctx.currentTime + 1.5);
     },
-
-    // 2. Game Loading Sound (Arpeggio)
     playLoading: function() {
         if (!this.ctx) return;
         [261, 329, 392, 523, 659, 783].forEach((freq, i) => {
-            const osc = this.ctx.createOscillator();
-            const gain = this.ctx.createGain();
+            const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
             osc.connect(gain); gain.connect(this.ctx.destination);
-            osc.type = 'sine';
-            osc.frequency.value = freq;
+            osc.type = 'sine'; osc.frequency.value = freq;
             gain.gain.setValueAtTime(0.05, this.ctx.currentTime + i*0.1);
             gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + i*0.1 + 0.3);
             osc.start(this.ctx.currentTime + i*0.1); osc.stop(this.ctx.currentTime + i*0.1 + 0.4);
         });
     },
-
-    // 3. Matching Sounds (Pentatonic Scale)
     playMatch: function(chainLen) {
         if (!this.ctx) return;
-        const baseFreqs = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25]; // C Minor Pentatonic
+        const baseFreqs = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
         const freq = baseFreqs[(chainLen - 3) % baseFreqs.length];
-        
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
+        const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
         osc.connect(gain); gain.connect(this.ctx.destination);
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        osc.type = 'triangle'; osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
         gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.3);
         osc.start(); osc.stop(this.ctx.currentTime + 0.4);
     },
-
-    // 4. Win / Level Complete
     playWin: function() {
         if (!this.ctx) return;
         [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
-            const osc = this.ctx.createOscillator();
-            const gain = this.ctx.createGain();
+            const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
             osc.connect(gain); gain.connect(this.ctx.destination);
-            osc.type = 'square';
-            osc.frequency.value = f;
+            osc.type = 'square'; osc.frequency.value = f;
             gain.gain.setValueAtTime(0.05, this.ctx.currentTime + i*0.1);
             gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + i*0.1 + 0.5);
             osc.start(this.ctx.currentTime + i*0.1); osc.stop(this.ctx.currentTime + i*0.1 + 0.6);
         });
     },
-
-    // 5. Lose / Game Over
     playLose: function() {
         if (!this.ctx) return;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
+        const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
         osc.connect(gain); gain.connect(this.ctx.destination);
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(200, this.ctx.currentTime);
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(200, this.ctx.currentTime);
         osc.frequency.linearRampToValueAtTime(50, this.ctx.currentTime + 1);
-        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 1);
+        gain.gain.setValueAtTime(0.2, this.ctx.currentTime); gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 1);
         osc.start(); osc.stop(this.ctx.currentTime + 1.2);
     },
-
     playPower: function() {
         if (!this.ctx) return;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
+        const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
         osc.connect(gain); gain.connect(this.ctx.destination);
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+        osc.type = 'sine'; osc.frequency.setValueAtTime(800, this.ctx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.3);
-        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.2, this.ctx.currentTime); gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.3);
         osc.start(); osc.stop(this.ctx.currentTime + 0.4);
     }
 };
 
 /* ----------------------------------------------------------------
-   2. DATA & LEVEL GENERATOR
+   2. DATA
    ---------------------------------------------------------------- */
 const Data = {
-    coins: 0,
-    currentLevel: 1,
-    unlockedLevel: 1,
-    inventory: { bomb: 1, life: 1 }, // Inventory
-    
-    save: function() { localStorage.setItem('nz_v4_data', JSON.stringify(this)); },
-    load: function() { 
-        const s = localStorage.getItem('nz_v4_data'); 
-        if(s) Object.assign(this, JSON.parse(s)); 
-    }
+    coins: 0, currentLevel: 1, unlockedLevel: 1,
+    inventory: { bomb: 1, life: 1 },
+    save: function() { localStorage.setItem('nz_v5_data', JSON.stringify(this)); },
+    load: function() { const s = localStorage.getItem('nz_v5_data'); if(s) Object.assign(this, JSON.parse(s)); }
 };
 
 const LevelManager = {
-    // Config for 100 Levels
     getLevel: function(lvl) {
         let shape = 'square';
-        let palette = ['#FF0055', '#00F260', '#00D4FF', '#FFD700', '#BF00FF']; // Default Neon
-
+        let palette = ['#FF0055', '#00F260', '#00D4FF', '#FFD700', '#BF00FF'];
         if(lvl > 20 && lvl <= 40) { shape = 'circle'; palette = ['#FF9AA2', '#FFB7B2', '#FFDAC1', '#E2F0CB', '#B5EAD7']; }
         if(lvl > 40 && lvl <= 60) { shape = 'diamond'; palette = ['#333333', '#555555', '#777777', '#999999', '#BBBBBB']; }
         if(lvl > 60 && lvl <= 80) { shape = 'hex'; palette = ['#00FFFF', '#FF00FF', '#FFFF00', '#00FF00', '#FF0000']; }
         if(lvl > 80) { shape = 'star'; palette = ['#E0BBE4', '#957DAD', '#D291BC', '#FEC8D8', '#FFDFD3']; }
-
-        return {
-            target: 500 + (lvl * 250),
-            moves: Math.max(10, 30 - Math.floor(lvl / 5)),
-            shape: shape,
-            colors: palette
-        };
+        return { target: 500 + (lvl * 250), moves: Math.max(10, 30 - Math.floor(lvl / 5)), shape, colors: palette };
     }
 };
 
@@ -405,59 +369,33 @@ const LevelManager = {
 const Game = {
     canvas: document.getElementById('game-canvas'),
     ctx: document.getElementById('game-canvas').getContext('2d'),
-    
-    // State
-    grid: [],
-    particles: [],
-    chain: [],
-    state: 'MENU', // MENU, PLAY, PAUSED, END
-    levelData: null,
-    
-    // Runtime
-    score: 0,
-    moves: 0,
-    target: 0,
-    isDragging: false,
-    
-    // Layout
+    grid: [], particles: [], chain: [], state: 'MENU', levelData: null,
+    score: 0, moves: 0, target: 0, isDragging: false,
     width: 0, height: 0, blockSize: 0, offsetX: 0, offsetY: 0,
 
     init: function() {
-        // Force resize immediately
         this.resize(); 
         window.addEventListener('resize', () => this.resize());
         
-        // Input Handling
-        // Helper to normalize mouse/touch coordinates
         const getPos = (e) => {
             let cx, cy;
-            if(e.touches && e.touches.length > 0) {
-                cx = e.touches[0].clientX;
-                cy = e.touches[0].clientY;
-            } else {
-                cx = e.clientX;
-                cy = e.clientY;
-            }
+            if(e.touches && e.touches.length > 0) { cx = e.touches[0].clientX; cy = e.touches[0].clientY; } 
+            else { cx = e.clientX; cy = e.clientY; }
             return {x: cx, y: cy};
         };
 
         const start = (e) => {
-            e.preventDefault(); 
+            // Prevent default ONLY if we are touching the canvas
+            if(e.target === this.canvas) e.preventDefault(); 
             const p = getPos(e);
             this.inputStart(p.x, p.y);
         };
-        const move = (e) => {
-            e.preventDefault();
-            const p = getPos(e);
-            this.inputMove(p.x, p.y);
-        };
+        const move = (e) => { if(e.target === this.canvas) e.preventDefault(); const p = getPos(e); this.inputMove(p.x, p.y); };
         const end = (e) => { this.inputEnd(); };
 
-        // Listeners
         this.canvas.addEventListener('mousedown', start);
         this.canvas.addEventListener('mousemove', move);
         window.addEventListener('mouseup', end);
-        
         this.canvas.addEventListener('touchstart', start, {passive: false});
         this.canvas.addEventListener('touchmove', move, {passive: false});
         window.addEventListener('touchend', end);
@@ -472,71 +410,53 @@ const Game = {
         this.height = container.clientHeight;
         this.canvas.width = this.width;
         this.canvas.height = this.height;
-        
         const margin = 20;
         this.blockSize = Math.floor((this.width - margin * 2) / 6);
         this.offsetX = margin;
-        this.offsetY = (this.height * 0.2); // Grid starts 20% down
+        this.offsetY = (this.height * 0.2);
     },
 
     startLevel: function(lvl) {
-        Data.currentLevel = lvl;
-        this.levelData = LevelManager.getLevel(lvl);
+        Data.currentLevel = lvl; this.levelData = LevelManager.getLevel(lvl);
+        this.score = 0; this.moves = this.levelData.moves; this.target = this.levelData.target;
+        this.state = 'PLAY'; this.chain = []; this.grid = [];
         
-        this.score = 0;
-        this.moves = this.levelData.moves;
-        this.target = this.levelData.target;
-        this.state = 'PLAY';
-        this.chain = [];
-        
-        this.grid = [];
         const rows = Math.floor((this.height - this.offsetY - 100) / this.blockSize);
-        
         for(let r=0; r<rows; r++) {
             for(let c=0; c<6; c++) {
                 this.grid.push({
-                    r, c,
-                    x: this.offsetX + c * this.blockSize,
-                    y: this.offsetY + r * this.blockSize,
+                    r, c, x: this.offsetX + c * this.blockSize, y: this.offsetY + r * this.blockSize,
                     color: this.levelData.colors[Math.floor(Math.random() * this.levelData.colors.length)],
-                    active: true,
-                    scale: 0,
-                    highlight: 0
+                    active: true, scale: 0, highlight: 0
                 });
             }
         }
-        
         UI.updateHUD();
         UI.showScreen('screen-hud');
         document.getElementById('app-container').classList.remove('heartbeat-mode');
     },
 
-    // COORDINATE FIX: Handles scaling between screen pixels and canvas pixels
     inputStart: function(clientX, clientY) {
         if(this.state !== 'PLAY') return;
-        
         const rect = this.canvas.getBoundingClientRect();
+        if (rect.width === 0) return; // Safety check
+        
         const scaleX = this.canvas.width / rect.width;
         const scaleY = this.canvas.height / rect.height;
-        
         const x = (clientX - rect.left) * scaleX;
         const y = (clientY - rect.top) * scaleY;
 
         const b = this.getBlockAt(x, y);
-        if(b && b.active) {
-            this.isDragging = true;
-            this.chain = [b];
-            this.triggerFeedback(b);
-        }
+        if(b && b.active) { this.isDragging = true; this.chain = [b]; this.triggerFeedback(b); }
     },
 
     inputMove: function(clientX, clientY) {
         if(!this.isDragging) return;
-        
         const rect = this.canvas.getBoundingClientRect();
+        if (rect.width === 0) return;
+
         const scaleX = this.canvas.width / rect.width;
         const scaleY = this.canvas.height / rect.height;
-        
         const x = (clientX - rect.left) * scaleX;
         const y = (clientY - rect.top) * scaleY;
 
@@ -545,67 +465,39 @@ const Game = {
         
         if(b && b !== last && b.active) {
             const dist = Math.abs(b.r - last.r) + Math.abs(b.c - last.c);
-            if(dist === 1 && b.color === last.color && !this.chain.includes(b)) {
-                this.chain.push(b);
-                this.triggerFeedback(b);
-            } else if (this.chain.length > 1 && b === this.chain[this.chain.length-2]) {
-                this.chain.pop();
-            }
+            if(dist === 1 && b.color === last.color && !this.chain.includes(b)) { this.chain.push(b); this.triggerFeedback(b); }
+            else if (this.chain.length > 1 && b === this.chain[this.chain.length-2]) { this.chain.pop(); }
         }
     },
 
     inputEnd: function() {
         if(!this.isDragging) return;
         this.isDragging = false;
-        
-        if(this.chain.length >= 3) {
-            this.processMatch();
-        } else {
-            this.chain.forEach(b => b.highlight = 0);
-            this.chain = [];
-        }
+        if(this.chain.length >= 3) { this.processMatch(); } 
+        else { this.chain.forEach(b => b.highlight = 0); this.chain = []; }
     },
 
     getBlockAt: function(x, y) {
-        return this.grid.find(b => 
-            b.active && 
-            x >= b.x && x < b.x + this.blockSize &&
-            y >= b.y && y < b.y + this.blockSize
-        );
+        return this.grid.find(b => b.active && x >= b.x && x < b.x + this.blockSize && y >= b.y && y < b.y + this.blockSize);
     },
 
     triggerFeedback: function(block) {
-        block.highlight = 1;
-        AudioSys.playMatch(this.chain.length);
+        block.highlight = 1; AudioSys.playMatch(this.chain.length);
         if(navigator.vibrate) navigator.vibrate(5);
         this.spawnParticles(block.x + this.blockSize/2, block.y + this.blockSize/2, block.color, 2);
     },
 
     processMatch: function() {
         const count = this.chain.length;
-        const points = count * 10 * count; 
+        const points = count * 10 * count; this.score += points; this.moves--;
         
-        this.score += points;
-        this.moves--;
-        
-        const comboEl = document.getElementById('combo-display');
-        const comboTxt = document.getElementById('combo-text');
-        comboTxt.innerText = count + "x";
-        comboEl.style.opacity = 1;
-        comboEl.style.transform = "scale(1.2)";
+        const comboEl = document.getElementById('combo-display'), comboTxt = document.getElementById('combo-text');
+        comboTxt.innerText = count + "x"; comboEl.style.opacity = 1; comboEl.style.transform = "scale(1.2)";
         setTimeout(() => { comboEl.style.opacity = 0; comboEl.style.transform = "scale(1)"; }, 800);
         
         UI.showFloatText(`+${points}`, this.chain[this.chain.length-1].x, this.chain[this.chain.length-1].y);
-        
-        this.chain.forEach(b => {
-            b.active = false;
-            this.spawnParticles(b.x + this.blockSize/2, b.y + this.blockSize/2, b.color, 8);
-            b.highlight = 0;
-        });
-        
-        this.chain = [];
-        UI.updateHUD();
-        
+        this.chain.forEach(b => { b.active = false; this.spawnParticles(b.x + this.blockSize/2, b.y + this.blockSize/2, b.color, 8); b.highlight = 0; });
+        this.chain = []; UI.updateHUD();
         setTimeout(() => this.refill(), 300);
     },
 
@@ -613,78 +505,42 @@ const Game = {
         for(let c=0; c<6; c++) {
             const activeBlocks = this.grid.filter(b => b.c === c && b.active).sort((a,b) => b.r - a.r);
             const totalRows = Math.floor((this.height - this.offsetY - 100) / this.blockSize);
-            
             this.grid = this.grid.filter(b => b.c !== c);
-            
             for(let i=0; i<activeBlocks.length; i++) {
-                const b = activeBlocks[i];
-                b.r = totalRows - 1 - i;
-                b.y = this.offsetY + b.r * this.blockSize;
-                this.grid.push(b);
+                const b = activeBlocks[i]; b.r = totalRows - 1 - i; b.y = this.offsetY + b.r * this.blockSize; this.grid.push(b);
             }
-            
             for(let i=0; i < (totalRows - activeBlocks.length); i++) {
                 const r = (totalRows - activeBlocks.length) - 1 - i;
-                this.grid.push({
-                    r, c,
-                    x: this.offsetX + c * this.blockSize,
-                    y: - (i * 60) - 100, 
-                    color: this.levelData.colors[Math.floor(Math.random() * this.levelData.colors.length)],
-                    active: true,
-                    scale: 0,
-                    highlight: 0
-                });
+                this.grid.push({ r, c, x: this.offsetX + c * this.blockSize, y: - (i * 60) - 100, color: this.levelData.colors[Math.floor(Math.random() * this.levelData.colors.length)], active: true, scale: 0, highlight: 0 });
             }
         }
-        
         this.checkState();
     },
 
     checkState: function() {
         const container = document.getElementById('app-container');
-        if(this.moves <= 3) {
-            container.classList.add('heartbeat-mode');
-        } else {
-            container.classList.remove('heartbeat-mode');
-        }
-
-        if(this.score >= this.target) {
-            this.winLevel();
-        } else if (this.moves <= 0) {
-            this.loseLevel();
-        }
+        if(this.moves <= 3) container.classList.add('heartbeat-mode'); else container.classList.remove('heartbeat-mode');
+        if(this.score >= this.target) { this.winLevel(); } else if (this.moves <= 0) { this.loseLevel(); }
     },
 
     winLevel: function() {
-        this.state = 'END';
-        AudioSys.playWin();
-        
+        this.state = 'END'; AudioSys.playWin();
         const reward = Math.floor(this.target / 10) + (Data.currentLevel * 10);
         Data.coins += reward;
-        if(Data.currentLevel >= Data.unlockedLevel && Data.currentLevel < 100) {
-            Data.unlockedLevel = Data.currentLevel + 1;
-        }
+        if(Data.currentLevel >= Data.unlockedLevel && Data.currentLevel < 100) { Data.unlockedLevel = Data.currentLevel + 1; }
         Data.save();
-        
-        document.getElementById('msg-title').innerText = "LEVEL COMPLETE!";
-        document.getElementById('msg-title').style.color = "var(--primary)";
+        document.getElementById('msg-title').innerText = "LEVEL COMPLETE!"; document.getElementById('msg-title').style.color = "var(--primary)";
         document.getElementById('msg-desc').innerText = `Score: ${this.score}\nReward: ${reward} Coins`;
         document.getElementById('msg-btn-1').innerText = "NEXT LEVEL";
-        document.getElementById('msg-btn-1').onclick = () => {
-             if(Data.currentLevel < 100) this.startLevel(Data.currentLevel + 1);
-             else UI.showMenu();
-        };
+        document.getElementById('msg-btn-1').onclick = () => { if(Data.currentLevel < 100) this.startLevel(Data.currentLevel + 1); else UI.showMenu(); };
         UI.showScreen('screen-msg');
     },
 
     loseLevel: function() {
-        this.state = 'END';
-        AudioSys.playLose();
-        document.getElementById('msg-title').innerText = "OUT OF MOVES";
-        document.getElementById('msg-title').style.color = "var(--danger)";
+        this.state = 'END'; AudioSys.playLose();
+        document.getElementById('msg-title').innerText = "OUT OF MOVES"; document.getElementById('msg-title').style.color = "var(--danger)";
         document.getElementById('msg-desc').innerText = "Target not reached.";
-        document.getElementById('msg-btn-1').innerText = "RETRY";
-        document.getElementById('msg-btn-1').onclick = () => this.startLevel(Data.currentLevel);
+        document.getElementById('msg-btn-1').innerText = "RETRY"; document.getElementById('msg-btn-1').onclick = () => this.startLevel(Data.currentLevel);
         UI.showScreen('screen-msg');
     },
 
@@ -692,132 +548,53 @@ const Game = {
         if(Data.inventory[type] > 0) {
             if(type === 'bomb') {
                 const center = this.grid[Math.floor(Math.random()*this.grid.length)];
-                this.grid.forEach(b => {
-                    const d = Math.abs(b.r - center.r) + Math.abs(b.c - center.c);
-                    if(d <= 2 && b.active) {
-                        b.active = false;
-                        this.spawnParticles(b.x, b.y, b.color, 5);
-                    }
-                });
+                this.grid.forEach(b => { const d = Math.abs(b.r - center.r) + Math.abs(b.c - center.c); if(d <= 2 && b.active) { b.active = false; this.spawnParticles(b.x, b.y, b.color, 5); } });
                 setTimeout(() => this.refill(), 500);
             }
-            if(type === 'life') {
-                this.moves += 5;
-                UI.updateHUD();
-                UI.showFloatText("+5 MOVES", this.width/2, this.height/2);
-            }
-            Data.inventory[type]--;
-            AudioSys.playPower();
-            UI.updateHUD();
-        } else {
-            UI.showFloatText("NO ITEM", this.width/2, this.height/2);
-        }
+            if(type === 'life') { this.moves += 5; UI.updateHUD(); UI.showFloatText("+5 MOVES", this.width/2, this.height/2); }
+            Data.inventory[type]--; AudioSys.playPower(); UI.updateHUD();
+        } else { UI.showFloatText("NO ITEM", this.width/2, this.height/2); }
     },
 
-    quitToMenu: function() {
-        this.state = 'MENU';
-        UI.showMenu();
-    },
-    
-    resume: function() {
-        this.state = 'PLAY';
-        UI.showScreen('screen-hud');
-    },
+    quitToMenu: function() { this.state = 'MENU'; UI.showMenu(); },
+    resume: function() { this.state = 'PLAY'; UI.showScreen('screen-hud'); },
 
     spawnParticles: function(x, y, color, count) {
-        for(let i=0; i<count; i++) {
-            this.particles.push({
-                x, y,
-                vx: (Math.random()-0.5)*8, vy: (Math.random()-0.5)*8,
-                life: 1, color
-            });
-        }
+        for(let i=0; i<count; i++) { this.particles.push({ x, y, vx: (Math.random()-0.5)*8, vy: (Math.random()-0.5)*8, life: 1, color }); }
     },
 
     loop: function() {
         requestAnimationFrame(() => this.loop());
-        const ctx = this.ctx;
-        const w = this.width;
-        const h = this.height;
-
-        ctx.clearRect(0,0,w,h);
-
+        const ctx = this.ctx; const w = this.width; const h = this.height; ctx.clearRect(0,0,w,h);
         if(this.chain.length > 0) {
-            ctx.beginPath();
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 8;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            
-            const start = this.chain[0];
-            ctx.moveTo(start.x + this.blockSize/2, start.y + this.blockSize/2);
+            ctx.beginPath(); ctx.strokeStyle = 'white'; ctx.lineWidth = 8; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            const start = this.chain[0]; ctx.moveTo(start.x + this.blockSize/2, start.y + this.blockSize/2);
             for(let i=1; i<this.chain.length; i++) {
-                const b = this.chain[i];
-                const prev = this.chain[i-1];
-                const mx = (prev.x + b.x)/2 + this.blockSize/2;
-                const my = (prev.y + b.y)/2 + this.blockSize/2;
+                const b = this.chain[i]; const prev = this.chain[i-1]; const mx = (prev.x + b.x)/2 + this.blockSize/2; const my = (prev.y + b.y)/2 + this.blockSize/2;
                 ctx.quadraticCurveTo(prev.x + this.blockSize/2, prev.y + this.blockSize/2, mx, my);
             }
-            const last = this.chain[this.chain.length-1];
-            ctx.lineTo(last.x + this.blockSize/2, last.y + this.blockSize/2);
-            ctx.stroke();
+            const last = this.chain[this.chain.length-1]; ctx.lineTo(last.x + this.blockSize/2, last.y + this.blockSize/2); ctx.stroke();
         }
-
         this.grid.forEach(b => {
             b.y += (this.offsetY + b.r * this.blockSize - b.y) * 0.2;
             if(b.scale < 1) b.scale += (1 - b.scale) * 0.2;
             if(!b.active) b.scale *= 0.8;
-
             if(b.scale < 0.01) return;
-
-            const cx = b.x + this.blockSize/2;
-            const cy = b.y + this.blockSize/2;
-            const size = (this.blockSize - 6) * b.scale / 2;
-
-            ctx.fillStyle = b.color;
-            if(b.highlight > 0) ctx.shadowColor = b.color, ctx.shadowBlur = 20;
-            else ctx.shadowBlur = 0;
-
-            ctx.beginPath();
-            const s = this.levelData ? this.levelData.shape : 'square';
-
-            if(s === 'square') {
-                ctx.roundRect(cx - size, cy - size, size*2, size*2, 8);
-            } else if(s === 'circle') {
-                ctx.arc(cx, cy, size, 0, Math.PI*2);
-            } else if(s === 'diamond') {
-                ctx.moveTo(cx, cy - size);
-                ctx.lineTo(cx + size, cy);
-                ctx.lineTo(cx, cy + size);
-                ctx.lineTo(cx - size, cy);
-                ctx.closePath();
-            } else if(s === 'hex') {
-                for(let i=0; i<6; i++) {
-                    const angle = (Math.PI/3) * i;
-                    const hx = cx + size * Math.cos(angle);
-                    const hy = cy + size * Math.sin(angle);
-                    if(i===0) ctx.moveTo(hx, hy); else ctx.lineTo(hx, hy);
-                }
-                ctx.closePath();
-            } else if(s === 'star') {
-                for(let i=0; i<5; i++) {
-                    ctx.lineTo(Math.cos((18+i*72)/180*Math.PI)*size + cx, -Math.sin((18+i*72)/180*Math.PI)*size + cy);
-                    ctx.lineTo(Math.cos((54+i*72)/180*Math.PI)*size/2 + cx, -Math.sin((54+i*72)/180*Math.PI)*size/2 + cy);
-                }
-                ctx.closePath();
-            }
+            const cx = b.x + this.blockSize/2; const cy = b.y + this.blockSize/2; const size = (this.blockSize - 6) * b.scale / 2;
+            ctx.fillStyle = b.color; if(b.highlight > 0) ctx.shadowColor = b.color, ctx.shadowBlur = 20; else ctx.shadowBlur = 0;
+            ctx.beginPath(); const s = this.levelData ? this.levelData.shape : 'square';
+            if(s === 'square') { ctx.roundRect(cx - size, cy - size, size*2, size*2, 8); } 
+            else if(s === 'circle') { ctx.arc(cx, cy, size, 0, Math.PI*2); } 
+            else if(s === 'diamond') { ctx.moveTo(cx, cy - size); ctx.lineTo(cx + size, cy); ctx.lineTo(cx, cy + size); ctx.lineTo(cx - size, cy); ctx.closePath(); } 
+            else if(s === 'hex') { for(let i=0; i<6; i++) { const angle = (Math.PI/3) * i; const hx = cx + size * Math.cos(angle); const hy = cy + size * Math.sin(angle); if(i===0) ctx.moveTo(hx, hy); else ctx.lineTo(hx, hy); } ctx.closePath(); } 
+            else if(s === 'star') { for(let i=0; i<5; i++) { ctx.lineTo(Math.cos((18+i*72)/180*Math.PI)*size + cx, -Math.sin((18+i*72)/180*Math.PI)*size + cy); ctx.lineTo(Math.cos((54+i*72)/180*Math.PI)*size/2 + cx, -Math.sin((54+i*72)/180*Math.PI)*size/2 + cy); } ctx.closePath(); }
             ctx.fill();
         });
-
         for(let i=this.particles.length-1; i>=0; i--) {
-            let p = this.particles[i];
-            p.x += p.vx; p.y += p.vy; p.life -= 0.05;
+            let p = this.particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.05;
             if(p.life <= 0) { this.particles.splice(i,1); continue; }
-            ctx.globalAlpha = p.life;
-            ctx.fillStyle = p.color;
-            ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill();
-        }
-        ctx.globalAlpha = 1;
+            ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill();
+        } ctx.globalAlpha = 1;
     }
 };
 
@@ -826,94 +603,56 @@ const Game = {
    ---------------------------------------------------------------- */
 const UI = {
     showScreen: function(id) {
-        document.querySelectorAll('.layer').forEach(l => {
-            l.classList.add('hidden');
-            l.classList.remove('active');
-        });
+        document.querySelectorAll('.layer').forEach(l => { l.classList.remove('active'); });
         const el = document.getElementById(id);
-        el.classList.remove('hidden');
-        setTimeout(() => el.classList.add('active'), 10);
-        
+        if(id === 'screen-hud') {
+            // Special handling for HUD: keep active but transparent click-through
+            el.classList.add('active'); 
+        } else {
+            el.classList.add('active');
+        }
         if(id === 'screen-menu') this.updateMenu();
     },
-
-    showMenu: function() {
-        this.showScreen('screen-menu');
-    },
-
+    showMenu: function() { this.showScreen('screen-menu'); },
     showLevelSelect: function() {
-        const grid = document.getElementById('level-grid');
-        grid.innerHTML = '';
+        const grid = document.getElementById('level-grid'); grid.innerHTML = '';
         for(let i=1; i<=100; i++) {
-            const btn = document.createElement('div');
-            btn.className = 'lvl-btn';
-            btn.innerText = i;
+            const btn = document.createElement('div'); btn.className = 'lvl-btn'; btn.innerText = i;
             if(i <= Data.unlockedLevel) {
-                btn.classList.add('unlocked');
-                if(i === Data.unlockedLevel) btn.classList.add('current');
-                btn.onclick = () => {
-                    Game.startLevel(i);
-                };
+                btn.classList.add('unlocked'); if(i === Data.unlockedLevel) btn.classList.add('current');
+                btn.onclick = () => { Game.startLevel(i); };
             }
             grid.appendChild(btn);
-        }
-        this.showScreen('screen-levels');
+        } this.showScreen('screen-levels');
     },
-
     showShop: function() {
-        const list = document.getElementById('shop-list');
-        list.innerHTML = '';
+        const list = document.getElementById('shop-list'); list.innerHTML = '';
         document.getElementById('shop-coins').innerText = Data.coins;
-
-        const items = [
-            { id: 'bomb', name: 'Area Bomb', cost: 200, icon: 'fa-bomb' },
-            { id: 'life', name: '+5 Moves', cost: 100, icon: 'fa-heart' }
-        ];
-
+        const items = [ { id: 'bomb', name: 'Area Bomb', cost: 200, icon: 'fa-bomb' }, { id: 'life', name: '+5 Moves', cost: 100, icon: 'fa-heart' } ];
         items.forEach(item => {
-            const el = document.createElement('div');
-            el.className = 'menu-btn';
-            el.style.display = 'flex';
-            el.style.justifyContent = 'space-between';
+            const el = document.createElement('div'); el.className = 'menu-btn'; el.style.display = 'flex'; el.style.justifyContent = 'space-between';
             el.innerHTML = `<span><i class="fas ${item.icon}"></i> ${item.name}</span> <span style="color:gold">${item.cost}</span>`;
             el.onclick = () => {
-                if(Data.coins >= item.cost) {
-                    Data.coins -= item.cost;
-                    Data.inventory[item.id]++;
-                    Data.save();
-                    this.showShop();
-                    App.toast("Purchased!");
-                } else {
-                    App.toast("Need more coins");
-                }
-            };
-            list.appendChild(el);
-        });
-        this.showScreen('screen-shop');
+                if(Data.coins >= item.cost) { Data.coins -= item.cost; Data.inventory[item.id]++; Data.save(); this.showShop(); App.toast("Purchased!"); }
+                else { App.toast("Need more coins"); }
+            }; list.appendChild(el);
+        }); this.showScreen('screen-shop');
     },
-
     updateHUD: function() {
         document.getElementById('hud-target').innerText = Game.target;
         document.getElementById('hud-moves').innerText = Game.moves;
         const pct = Math.min(100, (Game.score / Game.target) * 100);
         document.getElementById('hud-progress').style.width = pct + "%";
-        
         document.getElementById('badge-bomb').innerText = Data.inventory.bomb;
         document.getElementById('badge-life').innerText = Data.inventory.life;
     },
-
     updateMenu: function() {
         document.getElementById('menu-level').innerText = Data.currentLevel;
         document.getElementById('menu-coins').innerText = Data.coins;
     },
-
     showFloatText: function(txt, x, y) {
-        const el = document.createElement('div');
-        el.className = 'float-text';
-        el.innerText = txt;
-        el.style.left = x + 'px';
-        el.style.top = y + 'px';
-        document.body.appendChild(el);
+        const el = document.createElement('div'); el.className = 'float-text'; el.innerText = txt;
+        el.style.left = x + 'px'; el.style.top = y + 'px'; document.body.appendChild(el);
         setTimeout(() => el.remove(), 1000);
     }
 };
@@ -923,57 +662,23 @@ const UI = {
    ---------------------------------------------------------------- */
 const App = {
     init: function() {
-        AudioSys.init();
-        AudioSys.playBoot();
-        
+        AudioSys.init(); AudioSys.playBoot();
         UI.showScreen('screen-loading');
-        
-        const bar = document.getElementById('load-bar');
-        const txt = document.getElementById('load-text');
+        const bar = document.getElementById('load-bar'), txt = document.getElementById('load-text');
         let w = 0;
-        
-        const steps = [
-            { p: 30, t: "Loading Assets..." },
-            { p: 60, t: "Generating 100 Levels..." },
-            { p: 90, t: "Tuning Audio..." },
-            { p: 100, t: "Ready!" }
-        ];
-        
+        const steps = [ { p: 30, t: "Loading Assets..." }, { p: 60, t: "Generating 100 Levels..." }, { p: 90, t: "Tuning Audio..." }, { p: 100, t: "Ready!" } ];
         let stepIdx = 0;
-        
         const interval = setInterval(() => {
-            w += 1;
-            bar.style.width = w + "%";
-            
-            if(stepIdx < steps.length && w >= steps[stepIdx].p) {
-                txt.innerText = steps[stepIdx].t;
-                stepIdx++;
-            }
-
+            w += 1; bar.style.width = w + "%";
+            if(stepIdx < steps.length && w >= steps[stepIdx].p) { txt.innerText = steps[stepIdx].t; stepIdx++; }
             if(w >= 100) {
-                clearInterval(interval);
-                AudioSys.playLoading();
-                setTimeout(() => {
-                    UI.showMenu();
-                }, 1000);
+                clearInterval(interval); AudioSys.playLoading();
+                setTimeout(() => { UI.showMenu(); }, 1000);
             }
         }, 20);
     },
-    
     toast: function(msg) {
-        const el = document.createElement('div');
-        el.style.position = 'absolute';
-        el.style.top = '20px';
-        el.style.left = '50%';
-        el.style.transform = 'translateX(-50%)';
-        el.style.background = 'white';
-        el.style.color = 'black';
-        el.style.padding = '10px 20px';
-        el.style.borderRadius = '20px';
-        el.style.zIndex = '1000';
-        el.innerText = msg;
-        document.body.appendChild(el);
-        setTimeout(() => el.remove(), 2000);
+        const el = document.createElement('div'); el.style.position = 'absolute'; el.style.top = '20px'; el.style.left = '50%'; el.style.transform = 'translateX(-50%)'; el.style.background = 'white'; el.style.color = 'black'; el.style.padding = '10px 20px'; el.style.borderRadius = '20px'; el.style.zIndex = '1000'; el.innerText = msg; document.body.appendChild(el); setTimeout(() => el.remove(), 2000);
     }
 };
 
@@ -981,20 +686,13 @@ const App = {
 Game.init();
 
 // PWA Service Worker
-// FIX: Check if running via HTTP before registering SW
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        // Check if protocol is http or https (sw does not work on file://)
         if (location.protocol.startsWith('http')) {
-            navigator.serviceWorker.register('./service-worker.js')
-                .then(() => console.log('Service Worker Registered'))
-                .catch(err => console.log('SW Fail:', err));
-        } else {
-            console.log("Skipping SW registration: Running locally (file:// protocol).");
-        }
+            navigator.serviceWorker.register('./service-worker.js').then(() => console.log('SW Registered')).catch(err => console.log('SW Fail:', err));
+        } else { console.log("Skipping SW: Running locally."); }
     });
 }
-
 </script>
 </body>
 </html>
